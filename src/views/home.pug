@@ -1,0 +1,24 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(http-equiv="X-UA-Compatible", content="IE=edge")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Document
+        link(rel="stylesheet", href="https://unpkg.com/mvp.css")
+    body
+    h1 
+        header  Welcome Noom!
+    main 
+        form#nick
+            input(type="text" placeholder="닉네임 작성", required)
+            button Save 
+        
+        form#change
+            input(type="text", placeholder="닉네임 변경", required)
+            button Save
+        ul
+        form#message
+            input(type="text", placeholder="메시지 작성", required)
+            button Send
+    script(src="/public/js/app.js")
