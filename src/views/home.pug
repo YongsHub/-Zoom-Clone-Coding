@@ -10,15 +10,15 @@ html(lang="en")
     h1 
         header  Welcome Noom!
     main 
-        form#nick
-            input(type="text" placeholder="닉네임 작성", required)
-            button Save 
-        
-        form#change
-            input(type="text", placeholder="닉네임 변경", required)
-            button Save
-        ul
-        form#message
-            input(type="text", placeholder="메시지 작성", required)
-            button Send
+        div#welcome
+            form
+                input(type="text", placeholder="room name", required)
+                button Enter Room
+        div#room
+            ul
+            h3 
+            form
+                input(type="text", placeholder="message", required)
+                button Send 
+    script(src="/socket.io/socket.io.js")
     script(src="/public/js/app.js")

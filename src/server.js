@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
+//import WebSocket from "ws";
 
 const app = express();
 
@@ -12,9 +13,35 @@ app.get("/*", (_, res) => res.redirect("/"));
 
 const handleListen = () => console.log('Listening on http://localhost:3000');
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const httpServer = http.createServer(app);
+const io = SocketIO(httpServer);
 
+
+io.on("connection", socket => {
+    socket.onAny((event) => {
+        console.log(`got event : ${event}`);
+    });
+
+    socket.on("enter_room", (message, done) => {
+        socket.join(`${message.roomName}`);
+        done(message.roomName);
+        console.log(socket.rooms);
+        socket.to(message.roomName).emit("welcome");
+    });
+
+    socket.on("disconnecting", () => {
+        socket.rooms.forEach(room => {
+            socket.to(room).emit("bye");
+        });
+    });
+
+    socket.on("new_message", (msg, room, done) => {
+        socket.to(room).emit("new_message", msg);
+        done();
+    });
+});
+/*
+const wss = new WebSocket.Server({ server });
 const sockets = [];
 
 function makeMessage(nickname, message) {
@@ -49,4 +76,5 @@ wss.on("connection", (socket) => { // socket은 백엔드 서버에 연결된 �
         //socket.send(`${message.toString()}`);
     });
 });
-server.listen(3000, handleListen);
+*/
+httpServer.listen(3000, handleListen);
