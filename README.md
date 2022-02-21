@@ -1,5 +1,7 @@
 # Zoom-Clone-Coding
 
+[노마드 코더 클론 코딩](https://nomadcoders.co)
+
 ### Zoom Clone using WebRTC and Websockets
 
 ## 📌 하드웨어 요구 사항
@@ -61,6 +63,18 @@
 - 만약, 끝날 때 실행되는 function을 보내고 싶으면 마지막에 넣어야 함.
 - ! 이 function은 백 엔드에서 실행되는 것이 아니다!
 - front에서 실행되는 것이다!, front에 있는 function을 back-end가 실행시켜준 것이다.
-  > <br>
+
+<br>
 
 [그림 링크](https://developer.mozilla.org/ko/docs/Learn/JavaScript/Client-side_web_APIs) ![Socket IO 구성](/img/1.jpeg)
+
+### 👨‍💻 Adapter에 대해 알아보자
+
+<span style="color:yellow"> Adapter가 기본적으로 하는 일은 다른 서버들 사이에 실시간 어플리케이션을 동기화 하는 것이다.</span> 현재는 서버 내 in browser memory를 사용하고 있고, 서버에서 열어둔 하나의 connection에 모든 클라이언트들이 접속하고 있는 문제점들이 있다.
+
+- 앱 안에 많은 클라이언트가 있을 때, 모든 클라이언트들에 대해 connection을 열어둬야 한다.
+- 서버를 종료하고 다시 시작하면 대화 내용이 사라지는 문제점.
+
+### 👨‍💻 Web RTC 대해 알아보자
+
+- 실시간 커뮤니케이션을 가능하게 해주는 기술이다.

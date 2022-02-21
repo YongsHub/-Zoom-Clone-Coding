@@ -10,15 +10,27 @@ html(lang="en")
     h1 
         header  Welcome Noom!
     main 
+        div#video
+            video#camera(autoplay, playsinline, with="400", height="400")
+            button#mute Mute
+            button#turn Camera OFF
+            select#cameras 
         div#welcome
             form
-                input(type="text", placeholder="room name", required)
+                input(type="text", placeholder="press nickname", required)#nick
+                input(type="text", placeholder="room name", required)#roomName
                 button Enter Room
+
         div#room
             ul
             h3 
             form
                 input(type="text", placeholder="message", required)
-                button Send 
+                button Send
+
+            form#change
+                button Change Nickname
+            h3 Rooms List
+            ul#roomul  
     script(src="/socket.io/socket.io.js")
     script(src="/public/js/app.js")
