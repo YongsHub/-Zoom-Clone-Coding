@@ -1,18 +1,17 @@
 const socket = io();
-const welcome = document.querySelector("#welcome");
-const form = welcome.querySelector("form");
-const room = document.querySelector("#room");
-const roomForm = room.querySelector("form");
-const changeNickNameForm = room.querySelector("#change");
 const video = document.querySelector("#camera");
 const mute = document.getElementById("mute");
 const camera = document.getElementById("turn");
 const camerasSelect = document.getElementById("cameras");
-room.hidden = true; // 처음에 감춰둔다.
-let room_Name = '';
+const videoForm = document.getElementById("video");
+const welcomeForm = document.getElementById('welcome');
+
+videoForm.hidden = true; // 처음에 감춰둔다.
+let roomName = '';
 let myStream;
 let muteCheck = true; // 현재 마이크 켜져있음
 let cameraCheck = true; // 카메라 켜져있음
+let myPeerConnection;
 
 async function getDevices() {
     try {
@@ -59,7 +58,6 @@ async function getMedia(device) {
         console.log(err);
     }
 }
-getMedia();
 
 mute.addEventListener("click", () => {
     myStream.getAudioTracks()
@@ -96,149 +94,69 @@ camerasSelect.addEventListener("input", () => {
     getMedia(value);
 });
 
-function makeMessage(msg) {
-    const ul = room.querySelector("ul");
-    const li = document.createElement("li");
-    li.innerText = msg;
-    ul.append(li);
+
+///////////// welcome ///////////////////
+async function initCall() {
+    videoForm.hidden = false;
+    welcomeForm.hidden = true;
+    await getMedia();
+    makeConnection();
+};
+
+welcomeForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = welcomeForm.querySelector('input');
+    roomName = input.value;
+    await initCall();
+    socket.emit("join_room", roomName, () => {
+        console.log('someone.joined');
+    });
+});
+
+
+
+///// socket /////////
+socket.on('welcome', async (roomName) => {
+    console.log(`${roomName} 에 참가자가 생겼습니다.`);
+    const offer = await myPeerConnection.createOffer(); // 예를들어 firefox에서 접속했을 때 offer를 생성.
+    console.log('sent the offer');
+    myPeerConnection.setLocalDescription(offer);
+    socket.emit("offer", offer, roomName);
+});
+
+socket.on("offer", async (offer) => {
+    console.log('received the offer');
+    myPeerConnection.setRemoteDescription(offer); // 받는쪽에서 Remote 설정
+    const answer = await myPeerConnection.createAnswer();
+    myPeerConnection.setLocalDescription(answer); // 받는쪽 local 설정
+    socket.emit("answer", answer, roomName);
+    console.log('sent the answer');
+});
+
+socket.on('answer', (answer) => {
+    console.log('received the  answer');
+    myPeerConnection.setRemoteDescription(answer); // 보낸쪽 remote 설정
+});
+
+socket.on('ice', (candidate) => {
+    console.log('received candidate');
+    myPeerConnection.addIceCandidate(candidate);
+});
+// RTC Code
+
+function makeConnection() {
+    myPeerConnection = new RTCPeerConnection();
+
+    myPeerConnection.addEventListener('icecandidate', (data) => {
+        console.log('sent Candidate');
+        socket.emit('ice', data.candidate, roomName);
+    });
+
+    myPeerConnection.addEventListener('addstream', (data) => { // candidate가 add 되었을 때
+        const faceVideo = document.getElementById('faceVideo');
+        faceVideo.srcObject = data.stream;
+    });
+    myStream.getTracks().forEach(track => myPeerConnection.addTrack(track, myStream));
+
 }
-
-function roomCount(roomInfo) {
-    const h3 = room.querySelector("h3");
-    h3.innerText = roomInfo;
-}
-
-form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const roomNum = form.querySelector("#roomName");
-    const nick = form.querySelector("#nick");
-    room_Name = roomNum.value;
-    console.log(roomNum.value, nick.value);
-
-    socket.emit("nickname", nick.value, () => { // 닉네임 지정
-        console.log("nickname설정이 서버에서 실행되었습니다.");
-    });
-
-    socket.emit("enter_room", {roomName: roomNum.value}, (roomName) => {
-        room.hidden = false;
-        welcome.hidden = true;
-        const h3 = room.querySelector("h3");
-        h3.innerText = `room name: ${roomName}`;
-    });
-    roomNum.value ="";
-});
-
-roomForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const input = room.querySelector("input");
-    const message = input.value;
-
-    socket.emit("new_message", message, room_Name, () => {
-        makeMessage(`You: ${message}`);
-    });
-
-    input.value = '';
-});
-
-changeNickNameForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const nickname = prompt("변경하실 닉네임을 입력하세요");
-
-    socket.emit("nickname", nickname, () => {
-        console.log("닉네임이 변경되었습니다.");
-    });
-});
-
-socket.on("welcome", (nick, roomInfo) => { // 자기 자신이 발생시킨 welcome에 대해서는 반응 X
-    makeMessage(`${nick} 이 입장하였습니다.`);
-    roomCount(roomInfo);
-});
-
-socket.on("bye", (nick, roomInfo) => {
-    makeMessage(`${nick} 이 퇴장하였습니다.`);
-    roomCount(roomInfo);
-});
-
-socket.on("new_message", (nickName, msg) => {
-    console.log(nickName);
-    makeMessage(`${nickName}: ${msg}`);
-});
-
-socket.on("room_change", (rooms) => {
-    const ul = room.querySelector("ul:last-child");
-    ul.innerHTML = "";
-    rooms.forEach(room => {
-        const li = document.createElement("li");
-        li.innerText = room;
-        ul.append(li);
-    });
-}); // (msg) => console.log(msg)와 같음
-
-
-/*const socket = new WebSocket(`ws://${window.location.host}`);
-const messageList = document.querySelector("ul");
-const formNick = document.querySelector("#nick");
-const formMessage = document.querySelector("#message");
-const formNickChange = document.querySelector("#change");
-let nickName = 'anonymous';
-
-socket.addEventListener("open", () => {
-    console.log("Connected to Server ❗️");
-});
-
-socket.addEventListener("message", (message) => {
-    const li = document.createElement("li");
-    const nick = formNick.querySelector("input");
-    console.log(message);
-    console.log(nick.value);
-    const msg = JSON.parse(message.data);
-    console.log(msg.nick);
-    if(msg.nick !== nickName) {
-        li.innerText = `${msg.nick}: ${msg.data}`;
-        messageList.append(li);
-    }
-    //console.log("New Message: ", message.data);
-});
-
-socket.addEventListener("close", () => {
-    console.log("Disconnected");
-});
-
-function makeMessage(type, message) {
-    const msg = {
-        type: type,
-        data: message,
-    };
-    return JSON.stringify(msg);
-}
-
-formMessage.addEventListener("submit", (event) => {
-    event.preventDefault(); // 새로고침 하는 기본 동작을 막아준다.
-    //console.log(event);
-    const message = formMessage.querySelector("input");
-    socket.send(makeMessage('message', message.value));
-    const li = document.createElement("li");
-    li.innerText = `You: ${message.value}`;
-    messageList.append(li);
-    message.value = "";
-});
-
-
-formNick.addEventListener("submit", (event) => {
-    event.preventDefault();
-    formNick.style.display = "none";
-    const nick = formNick.querySelector("input");
-    socket.send(makeMessage('nickname', nick.value));
-    nickName = nick.value;
-    nick.value = "";
-});
-
-formNickChange.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const nick = formNickChange.querySelector("input");
-    socket.send(makeMessage('nickname', nick.value));
-    nickName = nick.value;
-    nick.value = "";
-})
-*/
 
