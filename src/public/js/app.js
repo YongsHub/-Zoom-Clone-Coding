@@ -12,6 +12,7 @@ let myStream;
 let muteCheck = true; // 현재 마이크 켜져있음
 let cameraCheck = true; // 카메라 켜져있음
 let myPeerConnection;
+let myDataChannel;
 
 async function getDevices() {
     try {
@@ -19,7 +20,8 @@ async function getDevices() {
         // const cameras = devices.filter((device) => device.kind === "videoinput");
         // console.log(cameras);
         const device = await navigator.mediaDevices.enumerateDevices();
-        const videoDevice = device.filter((cameras) => cameras.kind === 'audiooutput');
+        console.log(device);
+        const videoDevice = device.filter((cameras) => cameras.kind === 'videoinput');
         const currentCamera = myStream.getVideoTracks()[0];
         videoDevice.forEach((camera) => {
             const option = document.createElement("option");
@@ -59,6 +61,7 @@ async function getMedia(device) {
     }
 }
 
+
 mute.addEventListener("click", () => {
     myStream.getAudioTracks()
         .forEach((tracks) =>{
@@ -88,10 +91,15 @@ camera.addEventListener("click", () => {
     }
 });
 
-camerasSelect.addEventListener("input", () => {
-    const value = camerasSelect.value;
-    console.log(value);
-    getMedia(value);
+camerasSelect.addEventListener("input", async () => {
+    await getMedia(camerasSelect.value);
+    if(myPeerConnection) {
+        const videoTrack = myStream.getVideoTracks()[0];
+        const videoSender = myPeerConnection
+        .getSenders()
+        .find(sender => sender.track.kind === "video");
+        videoSender.replaceTrack(videoTrack);
+    }
 });
 
 
@@ -116,8 +124,10 @@ welcomeForm.addEventListener("submit", async (event) => {
 
 
 ///// socket /////////
-socket.on('welcome', async (roomName) => {
+socket.on('welcome', async () => {
     console.log(`${roomName} 에 참가자가 생겼습니다.`);
+    myDataChannel = myPeerConnection.createDataChannel('chat');
+    myDataChannel.addEventListener('message', (event) => console.log(event.data));
     const offer = await myPeerConnection.createOffer(); // 예를들어 firefox에서 접속했을 때 offer를 생성.
     console.log('sent the offer');
     myPeerConnection.setLocalDescription(offer);
@@ -127,6 +137,10 @@ socket.on('welcome', async (roomName) => {
 socket.on("offer", async (offer) => {
     console.log('received the offer');
     myPeerConnection.setRemoteDescription(offer); // 받는쪽에서 Remote 설정
+    myPeerConnection.ondatachannel = (event) => {
+        myDataChannel = event.channel;
+        myDataChannel.addEventListener('message', (event) => console.log(event.data));
+    }
     const answer = await myPeerConnection.createAnswer();
     myPeerConnection.setLocalDescription(answer); // 받는쪽 local 설정
     socket.emit("answer", answer, roomName);
@@ -145,14 +159,24 @@ socket.on('ice', (candidate) => {
 // RTC Code
 
 function makeConnection() {
-    myPeerConnection = new RTCPeerConnection();
+    myPeerConnection = new RTCPeerConnection({
+        iceServers: [
+            {
+                urls: [
+                    "stun:stun.l.google.con:19302",
+                    "stun:stun1.l.google.con:19302",
+                    "stun:stun2.l.google.con:19302",
+                ],
+            },
+        ],
+    });
 
     myPeerConnection.addEventListener('icecandidate', (data) => {
         console.log('sent Candidate');
         socket.emit('ice', data.candidate, roomName);
     });
 
-    myPeerConnection.addEventListener('addstream', (data) => { // candidate가 add 되었을 때
+    myPeerConnection.addEventListener('track', (data) => { // candidate가 add 되었을 때
         const faceVideo = document.getElementById('faceVideo');
         faceVideo.srcObject = data.stream;
     });

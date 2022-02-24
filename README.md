@@ -81,8 +81,22 @@
 - P2P 형식으로 new RTCPeerConnection()를 생성하여 각 장치가 가지고 있는 스트림을 addTrack()을 이용하여 추가해 주는 방식이다. 이후 Offer를 생성하여
   setLocalDescription() 메서드를 이용하여 offer를 지정한다.
 - 여기서 description은 peer를 나타내는 것이라고 생각하면 좋다.
+- Peer들이 많아진 수록 비디오나 오디오를 다룰때 처리 속도가 느려지는 단점이 드러난다. -> 그물망 구조라고도 부른다. 따라서 몇몇 회사에서는 SFU라는 것을 이용하기도 한다.
   ![WEB RTC](https://miro.medium.com/max/1600/1*hQHzaT-JB1Wx3y0qtQX8Kw.png)
 
 ### 👨‍💻 ICE Candidate
 
 - Internet Connectivity Establishment 인터넷 연결 생성을 의미하며 webRTC에 필요한 프로토콜입니다. 따라서 브라우저끼리 의사소통을 할 수 있도록 해준다.
+- socket을 통해 각 브라우저의 offer를 전달해주면서 Candidate를 알 수 있게 되며, 이후 Peer to Peer 통신이 이루어진다.
+
+> RTCPeerConnection에서 addstream에 대해 더이상 추천하지 않는다고 공식문서에 지정되어 있다. 인용에 의하면, You Should instead wathch for the track event, which is sent for each media track added to the RTCPeerConnection이라 작성되어 있다. [참고링크](https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addstream_event)
+
+### 👨‍💻 Local Tunnel
+
+- local tunnel을 사용하면 우리 서버의 URL을 생성할 수 있고 서버를 전세계와 공유할 수 있게 일시적으로 오픈할 수 있다.
+- lt --port 명령어를 사용하여 오픈된 서버의 port를 ex(lt --port 3000) 열면 된다.
+  > STUN Server란? NAT 클라이언트가 로컬 네트워크 외부에서 호스트되는 VOIP 제공업체에 전화 통화를 설정할 수 있도록 해줍니다. 클라이언트가 공용 주소, 이면에 있는 NAT의 유형 및 NAT에 의해 특정 로컬 포트와 연결된 인터넷 측 포트를 찾을 수 있도록 해준다. [참고 링크](https://www.3cx.com/global/kr/voip-sip-webrtc/stun-server/)
+
+### 👨‍💻 Data Channel()
+
+- peer to peer 의 유저들이 모든 종료의 데이터를 주고 받을 수 있는 채널이다. images, file transfer, text chat, game update packets 과 같은 content를 유용하게 peer들 끼리 보낼 수 있다. 단지 비디오나 오디오는 무겁기 때문에 텍스트 위주로는 빠른 속도로 가능하다.
